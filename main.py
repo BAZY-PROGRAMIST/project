@@ -10,8 +10,6 @@ HEIGHT = 800
 FPS = 60
 sc = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
-lvl = 'game'
-
 from load import *
 def restart():
     global block_group, water_group, camera_group, player_group
@@ -19,15 +17,14 @@ def restart():
     water_group = pygame.sprite.Group()
     camera_group = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
-    player = Player(player_image, (300, 300))
-    player_group.add(player)
+
 
 
 def game_lvl():
     sc.fill('grey')
-    block_group.update()
+    block_group.update(0)
     block_group.draw(sc)
-    water_group.update()
+    water_group.update(0)
     water_group.draw(sc)
     player_group.update()
     player_group.draw(sc)
@@ -49,10 +46,14 @@ def drawMaps(nameFile):
                 block = Block(block_image, pos)
                 block_group.add(block)
                 camera_group.add(block)
-            elif maps[i][j] == '1':
+            elif maps[i][j] == '2':
                 water = Water(water_image, pos)
                 water_group.add(water)
                 camera_group.add(water)
+            elif maps[i][j] == '3':
+                player = Player(player_image, pos)
+                player_group.add(player)
+                camera_group.add(player)
 
 
 class Block(pygame.sprite.Sprite):
@@ -65,6 +66,19 @@ class Block(pygame.sprite.Sprite):
 
     def update(self, step):
         self.rect.x += step
+        if pygame.sprite.spritecollide(self, player_group, False):
+            if abs(self.rect.top - player.rect.bottom) < 15:
+                player.rect.bottom = self.rect.top - 5
+                player.on_ground = True
+            if abs(self.rect.bottom - player.rect.top) < 15:
+                player.rect.top = self.rect.bottom + 5
+                player.velocity_y = 0
+            if (abs(self.rect.left - player.rect.right) < 15
+                    and abs(self.rect.centery - player.rect.centery) < 50):
+                player.rect.left = self.rect.right
+            if (abs(self.rect.right - player.rect.left) < 15
+                    and abs(self.rect.centery - player.rect.centery) < 50):
+                player.rect.left = self.rect.right
 class Water(pygame.sprite.Sprite):
     def __init__(self, image, pos):
         pygame.sprite.Sprite.__init__(self)
@@ -127,13 +141,12 @@ class Player(pygame.sprite.Sprite):
 
 
 restart()
-drawMaps('1(2).txt')
+drawMaps('1.txt')
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
 
-    if lvl == 'game':
-        game_lvl()
+    game_lvl()
     clock.tick(FPS)
