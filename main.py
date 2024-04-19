@@ -12,10 +12,11 @@ sc = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 from load import *
 def restart():
-    global block_group, water_group, camera_group, player_group, player
+    global block_group, water_group, camera_group, player_group, player, box_group
     block_group = pygame.sprite.Group()
     water_group = pygame.sprite.Group()
     camera_group = pygame.sprite.Group()
+    box_group = pygame.sprite.Group()
     player = Player(player_image, (300, 300))
     player_group = pygame.sprite.Group()
     player_group.add(player)
@@ -26,6 +27,8 @@ def game_lvl():
     sc.fill('grey')
     block_group.update(0)
     block_group.draw(sc)
+    box_group.update(0)
+    box_group.draw(sc)
     water_group.update(0)
     water_group.draw(sc)
     player_group.update()
@@ -52,6 +55,11 @@ def drawMaps(nameFile):
                 water = Water(water_image, pos)
                 water_group.add(water)
                 camera_group.add(water)
+            elif maps[i][j] == '3':
+                box = Box(box_image, pos)
+                box_group.add(box)
+                camera_group.add(box)
+
 
 
 
@@ -74,10 +82,36 @@ class Block(pygame.sprite.Sprite):
                 player.velocity_y = 0
             if (abs(self.rect.left - player.rect.right) < 15
                     and abs(self.rect.centery - player.rect.centery) < 50):
-                player.rect.left = self.rect.right
+                player.rect.right = self.rect.left
             if (abs(self.rect.right - player.rect.left) < 15
                     and abs(self.rect.centery - player.rect.centery) < 50):
                 player.rect.left = self.rect.right
+
+
+class Box(pygame.sprite.Sprite):
+    def __init__(self, image, pos):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+
+    def update(self, step):
+        self.rect.x += step
+        if pygame.sprite.spritecollide(self, player_group, False):
+            if abs(self.rect.top - player.rect.bottom) < 50:
+                player.rect.bottom = self.rect.top - 5
+                player.on_ground = True
+            if abs(self.rect.bottom - player.rect.top) < 15:
+                player.rect.top = self.rect.bottom + 5
+                player.velocity_y = 0
+            if (abs(self.rect.left - player.rect.right) < 15
+                    and abs(self.rect.centery - player.rect.centery) < 50):
+                player.rect.right = self.rect.left
+            if (abs(self.rect.right - player.rect.left) < 15
+                    and abs(self.rect.centery - player.rect.centery) < 50):
+                player.rect.left = self.rect.right
+
 
 
 class Water(pygame.sprite.Sprite):
@@ -89,6 +123,8 @@ class Water(pygame.sprite.Sprite):
         self.rect.y = pos[1]
     def update(self, step):
         self.rect.x += step
+
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, image, pos):
@@ -109,7 +145,18 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.move()
         self.jump()
+        self.anime()
         self.key = pygame.key.get_pressed()
+
+    def anime(self):
+        if self.anime:
+            self.timer_anime += 1
+            if self.timer_anime / FPS > 0.1:
+                if self.frame == len(player_image) - 1:
+                    self.frame = 0
+                else:
+                    self.frame += 1
+                self.timer_anime = 0
     def move(self):
         key = pygame.key.get_pressed()
         if key[pygame.K_d]:
@@ -120,13 +167,15 @@ class Player(pygame.sprite.Sprite):
                 camera_group.update(-self.speed)
 
         elif key[pygame.K_a]:
+            self.image = pygame.transform.flip(player_image, True, False)
             self.rect.x -= self.speed
             if self.rect.left > 1000:
                 self.rect.left = 1000
-                self.image = pygame.transform.flip(player_image)
                 camera_group.update(-self.speed)
+        if pygame.sprite.spritecollide(self, water_group, False):
+            self.kill()
     def jump(self):
-        if self.key[pygame.K_SPACE] and self.on_ground:
+        if self.key[pygame.K_w] and self.on_ground:
             self.velocity_y = -25
             self.on_ground = False
         self.rect.y += self.velocity_y
