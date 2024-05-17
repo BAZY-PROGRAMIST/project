@@ -75,7 +75,7 @@ class Block(pygame.sprite.Sprite):
         self.rect.x += step
         if pygame.sprite.spritecollide(self, player_group, False):
             if abs(self.rect.top - player.rect.bottom) < 50:
-                player.rect.bottom = self.rect.top - 5
+                player.rect.bottom = self.rect.top
                 player.on_ground = True
             if abs(self.rect.bottom - player.rect.top) < 15:
                 player.rect.top = self.rect.bottom + 5
@@ -100,10 +100,10 @@ class Box(pygame.sprite.Sprite):
         self.rect.x += step
         if pygame.sprite.spritecollide(self, player_group, False):
             if abs(self.rect.top - player.rect.bottom) < 50:
-                player.rect.bottom = self.rect.top - 5
-                player.on_ground = True
+                player.rect.bottom = self.rect.top
+
             if abs(self.rect.bottom - player.rect.top) < 15:
-                player.rect.top = self.rect.bottom + 5
+                player.rect.top = self.rect.bottom
                 player.velocity_y = 0
             if (abs(self.rect.left - player.rect.right) < 15
                     and abs(self.rect.centery - player.rect.centery) < 50):
@@ -136,7 +136,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = pos[1]+200
         self.speed = 5
         self.velocity_y = 0
-        self.on_ground = True
+        self.on_ground = False
         self.frame = 0
         self.timer_anime = 0
         self.anime_idle = False
@@ -149,9 +149,16 @@ class Player(pygame.sprite.Sprite):
         self.jump_step = -20
         self.flag_damage = False
     def update(self):
+        if pygame.sprite.spritecollide(self, block_group, False):
+            self.on_ground = True
+        else:
+            self.on_ground = False
+        if not self.on_ground:
+            self.rect.y += 1
         self.animation()
         self.move()
         self.atk()
+        self.Jump()
         self.key = pygame.key.get_pressed()
 
     def animation(self):
@@ -181,11 +188,17 @@ class Player(pygame.sprite.Sprite):
             self.frame = 0
     def move(self):
         if self.key[pygame.K_d]:
+            if self.rect.right > 1000:
+                self.rect.right = 1000
+                camera_group.update(-self.speed)
             self.rect.x += 2
             self.anime_idle = False
             if not self.anime_atk:
                 self.anime_run = True
         elif self.key[pygame.K_a]:
+            if self.rect.right > 1000:
+                self.rect.right = 1000
+                camera_group.update(-self.speed)
             self.rect.x -= 2
             self.anime_idle = False
             if not self.anime_atk:
@@ -198,8 +211,9 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollide(self, water_group, False):
             self.kill()
-    def jump(self):
+    def Jump(self):
         if self.key[pygame.K_w]:
+            print('54')
             self.jump = True
         if self.jump:
             if self.jump_step <= 20:
